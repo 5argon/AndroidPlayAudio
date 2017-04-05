@@ -2,9 +2,11 @@
 
 Sounds simple, but I spent time almost a day trying to learn how to play sounds on Android by assembling pieces from StackOverflow. (The official Google page is not helpful)
 
-My goal was to test how is the audio latency on Android on a minimal project by pressing a button and subjectively evaluate the latency with your ear.
+My goal was to test how is the audio latency on Android on a minimal project by pressing a button and subjectively evaluate the latency with your ear. Musicians needs 10ms or lower latency which iOS can already achieve.
 
 ## What's inside
+
+![Preview](/ss2.png?raw=true "Preview")
 
 ### Audio Feature
 ```
@@ -38,3 +40,10 @@ This is new on Nougat and already depricated on Android O. See [here](https://de
 If you don't have a Nougat device you can uncomment them and then go change build.gradle to something lower than API 25.
 
 It says it would help speed up the audio, but on my Nougat device I think it is the same as before.
+
+## What's Missing
+The only one left that I did not test is playing audio via Open SL ES. But I am afraid that it would not be much different from AudioTrack. If anyone want to confirm this, feel free to add to this project.
+
+## The Bottom Line
+
+Even Android Nougat is still no good for applications with musical feedback.
