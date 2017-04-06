@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                   playWithSoundPool();
+                    playWithSoundPool();
                 }
                 return true;
             }
@@ -47,7 +47,40 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    playWithAudioTrack();
+                    playWithAudioTrackNormal();
+                }
+                return true;
+            }
+        });
+
+        Button d = (Button) findViewById(R.id.button3);
+        d.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    playWithAudioTrackLowLatency();
+                }
+                return true;
+            }
+        });
+
+        Button f = (Button) findViewById(R.id.button4);
+        f.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    playWithAudioTrackNormal48();
+                }
+                return true;
+            }
+        });
+
+        Button g = (Button) findViewById(R.id.button5);
+        g.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    playWithAudioTrackLowLatency48();
                 }
                 return true;
             }
@@ -62,13 +95,12 @@ public class MainActivity extends AppCompatActivity {
         Log.d("LOW LATENCY FEATURE : ",String.valueOf(hasLowLatencyFeature));
         Log.d("PRO AUDIO FEATURE : ", String.valueOf(hasProFeature));
 
-        for (int rate : new int[] {8000, 11025, 16000, 22050, 44100, 48000}) {  // add the rates you wish to check against
-            int bufferSize = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_CONFIGURATION_DEFAULT, AudioFormat.ENCODING_PCM_16BIT);
-            if (bufferSize > 0) {
-                Log.d("SAMPLE RATE TEST", String.valueOf(rate) + " supported.");
+        AudioManager myAudioMgr = (AudioManager) getSystemService(getApplicationContext().AUDIO_SERVICE);
+        String nativeSampleRate = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+        Log.d("NATIVE SAMPLING RATE : ", nativeSampleRate);
 
-            }
-        }
+        String optimalBufferSize = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
+        Log.d("OPTIMAL BUFFER SIZE : ", optimalBufferSize);
     }
 
     @Override
@@ -98,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setFlags(AudioAttributes.FLAG_LOW_LATENCY)  //This is Nougat+ only (API 25) comment if you have lower
+                //.setFlags(AudioAttributes.FLAG_LOW_LATENCY)  //This is Nougat+ only (API 25) comment if you have lower
                 .build();
 
         SoundPool sp = new SoundPool.Builder()
@@ -114,13 +146,46 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public void playWithAudioTrackNormal() {
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        playWithAudioTrack(attributes, R.raw.assist, 44100);
+    }
+
+    public void playWithAudioTrackLowLatency() {
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setFlags(AudioAttributes.FLAG_LOW_LATENCY) //This is Nougat+ only (API 25) comment if you have lower
+                .build();
+        playWithAudioTrack(attributes,R.raw.assist,44100);
+    }
+
+    public void playWithAudioTrackNormal48() {
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        playWithAudioTrack(attributes,R.raw.assist48,48000);
+    }
+
+    public void playWithAudioTrackLowLatency48() {
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        playWithAudioTrack(attributes,R.raw.assist48,48000);
+    }
+
     AudioTrack at;
     byte[] music = null;
-    public boolean playWithAudioTrack() {
+    public boolean playWithAudioTrack(AudioAttributes attributes, int audio, int samplingRate) {
 
         try {
-            InputStream is = getResources().openRawResource(R.raw.assist);
-            music = new byte[(int)getResources().openRawResourceFd(R.raw.assist).getLength()];
+            InputStream is = getResources().openRawResource(audio);
+            music = new byte[(int)getResources().openRawResourceFd(audio).getLength()];
             is.read(music);
             is.close();
         } catch (IOException e) {
@@ -128,14 +193,8 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
 
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_GAME)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setFlags(AudioAttributes.FLAG_LOW_LATENCY) //This is Nougat+ only (API 25) comment if you have lower
-                .build();
-
         AudioFormat af =  new AudioFormat.Builder()
-                .setSampleRate(44100)
+                .setSampleRate(samplingRate)
                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                 .build();
 
