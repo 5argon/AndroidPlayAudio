@@ -24,12 +24,26 @@ import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
 
+    //If false, all buttons will load audio then play. Use it to compare against each other in the same device.
+    //But if you are going to compare with other device or with iOS, set to true. Or this will have a loading
+    //overhead every time you press a button and lose badly.
+    boolean crossCompare = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        if(crossCompare) //Fixed to normal 44100 ones. All buttons play this same setting.
+        {
+                AudioAttributes attributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_GAME)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build();
+                MakeAudioTrack(attributes, R.raw.assist, 44100);
+        }
 
         Button b = (Button) findViewById(R.id.button);
         b.setOnTouchListener(new View.OnTouchListener() {
@@ -147,42 +161,64 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void playWithAudioTrackNormal() {
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_GAME)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
-        playWithAudioTrack(attributes, R.raw.assist, 44100);
+        if(!crossCompare) {
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+            playWithAudioTrack(attributes, R.raw.assist, 44100);
+        }
+        else
+        {
+            JustPlay();
+        }
     }
 
     public void playWithAudioTrackLowLatency() {
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_GAME)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setFlags(AudioAttributes.FLAG_LOW_LATENCY) //This is Nougat+ only (API 25) comment if you have lower
-                .build();
-        playWithAudioTrack(attributes,R.raw.assist,44100);
+        if(!crossCompare) {
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setFlags(AudioAttributes.FLAG_LOW_LATENCY) //This is Nougat+ only (API 25) comment if you have lower
+                    .build();
+            playWithAudioTrack(attributes, R.raw.assist, 44100);
+        }
+        else
+        {
+            JustPlay();
+        }
     }
 
     public void playWithAudioTrackNormal48() {
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_GAME)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
-        playWithAudioTrack(attributes,R.raw.assist48,48000);
+        if(!crossCompare) {
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+            playWithAudioTrack(attributes, R.raw.assist48, 48000);
+        }
+        else
+        {
+            JustPlay();
+        }
     }
 
     public void playWithAudioTrackLowLatency48() {
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_GAME)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
-        playWithAudioTrack(attributes,R.raw.assist48,48000);
+        if(!crossCompare) {
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+            playWithAudioTrack(attributes, R.raw.assist48, 48000);
+        }
+        else
+        {
+            JustPlay();
+        }
     }
 
-    AudioTrack at;
-    byte[] music = null;
-    public boolean playWithAudioTrack(AudioAttributes attributes, int audio, int samplingRate) {
-
+    private void MakeAudioTrack(AudioAttributes attributes, int audio, int samplingRate)
+    {
         try {
             InputStream is = getResources().openRawResource(audio);
             music = new byte[(int)getResources().openRawResourceFd(audio).getLength()];
@@ -190,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
             is.close();
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
+
         }
 
         AudioFormat af =  new AudioFormat.Builder()
@@ -204,19 +240,43 @@ public class MainActivity extends AppCompatActivity {
                 .setTransferMode(AudioTrack.MODE_STATIC)
                 .setSessionId(AudioManager.AUDIO_SESSION_ID_GENERATE)
                 .setAudioFormat(af)
-        .build();
+                .build();
 
         at.write(music, 46, music.length - 46);
 
+    }
+
+    AudioTrack at;
+    byte[] music = null;
+    public boolean playWithAudioTrack(AudioAttributes attributes, int audio, int samplingRate) {
+
+        if(crossCompare == false) {
+            MakeAudioTrack(attributes,audio,samplingRate);
+        }
+        JustPlay();
+        return true;
+
+    }
+
+    private void JustPlay()
+    {
         try{
-            at.play();
+            int playState = at.getPlayState();
+            if(playState == AudioTrack.PLAYSTATE_PLAYING)
+            {
+                at.stop();
+                at.reloadStaticData();
+                at.play();
+            }
+            if(playState == AudioTrack.PLAYSTATE_STOPPED) {
+                at.reloadStaticData();
+                at.play();
+            }
 
         } catch (IllegalStateException e) {
             e.printStackTrace();
         }
-
-        return true;
-
     }
+
 
 }
